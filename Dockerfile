@@ -12,4 +12,4 @@ RUN pip install -r requirements.txt
 # copy every content from the local file to the image
 COPY . /app
 
-CMD [ "python", "./app.py"]
+CMD [ "python", "./main.py"]
