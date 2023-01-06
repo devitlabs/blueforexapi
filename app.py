@@ -1,9 +1,11 @@
 from flask import Flask
 import datetime
 from flask_restful import Resource, Api
+import gspread
 
 app = Flask(__name__)
 api = Api(app)
+sa = gspread.service_account()
 
 class HelloWorld(Resource):
     def get(self):
@@ -11,41 +13,36 @@ class HelloWorld(Resource):
 
 class Weeks(Resource):
     def get(self):
-        return {
-            "total":10,
-            "weeks":[
-                {
-                    "week_id":"week_2022_10_1",
-                    "start":2000,
-                    "end":200,
-                    "month":10,
-                    "week":42,
-                    "order":1,
-                    "year":2022,
-                    "number":35
-                },
-                {
-                    "week_id": "week_2022_10_1",
-                    "start": 2000,
-                    "end": 200,
-                    "month": 10,
-                    "week": 42,
-                    "order": 1,
-                    "year": 2022,
-                    "number": 35
-                },
-                {
-                    "week_id": "week_2022_10_1",
-                    "start": 2000,
-                    "end": 200,
-                    "month": 10,
-                    "week": 42,
-                    "order": 1,
-                    "year": 2022,
-                    "number": 35
-                },
-            ]
+        json = {
+            "total":0,
+            "weeks":[]
         }
+        try:
+            sh_weeks = sa.open("WeeksSheet")
+            wks_weeks = sh_weeks.sheet1
+            end = wks_weeks.acell("K1").value
+            print(end)
+            weeks = wks_weeks.get(f"A2:I{end}")
+            list_week = []
+            for week in weeks :
+                week_json = {}
+                week_json["id"] = int(week[0])
+                week_json["week_id"] = week[1]
+                week_json["start"] = week[2]
+                week_json["end"] = week[3]
+                week_json["week"] = int(week[4])
+                week_json["month"] = int(week[5])
+                week_json["number"] = int(week[6])
+                week_json["year"] = int(week[7])
+                week_json["valide"] = week[8] == "TRUE"
+                list_week.append(week_json)
+            json["total"] = len(list_week)
+            json["weeks"] = list_week
+
+            return  json
+
+        except :
+            return  json
 
 class LiveSignals(Resource):
     def get(self):
@@ -402,9 +399,11 @@ class AssetCalcutor(Resource):
             ]
         }
 
+
+
 api.add_resource(HelloWorld, '/')
 api.add_resource(LiveSignals, '/live_signals')
 api.add_resource(Weeks, '/weeks')
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0")
+    app.run(debug=True)
